@@ -72,8 +72,6 @@ func initGrid(w http.ResponseWriter, r *http.Request) {
     for i := 0; i < numPlayers; i++ {
         players[i] = internal.Player{
             Name: "Player " + strconv.Itoa(i + 1),
-            FIDE: nil,
-            Rating: nil,
             Chance: 100 / float64(numPlayers),
             Standing: i,
         }
@@ -105,8 +103,8 @@ func updateGrid(w http.ResponseWriter, r *http.Request) {
             http.Error(w, "Invalid FIDE input", http.StatusBadRequest)
         }
         players[i].Name = profile.Name
-        players[i].FIDE = &fide
-        players[i].Rating = &profile.Rating
+        players[i].FIDE = fide
+        players[i].Rating = profile.Rating
     }
 
     numPrizesStr := r.FormValue("numPrizes")

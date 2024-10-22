@@ -3,8 +3,8 @@ package internal
 // Main
 type Player struct {
     Name   string
-    FIDE   *int
-    Rating *int
+    FIDE   int
+    Rating int
     Chance float64
     Standing int
     Games []Game
