@@ -1,0 +1,8 @@
+table, th, td {
+    border: 2px solid grey;
+    border-collapse: collapse;
+}
+
+.prize {
+    background-color: darkgreen;
+}
