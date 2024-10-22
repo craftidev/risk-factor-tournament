@@ -1,0 +1,27 @@
+<form hx-post="update-grid" hx-target="#grid" hx-swap="outerHTML">
+    <table>
+        <tr>
+            <th>Player</th>
+            <th>FIDE number</th>
+            <th>Chances</th>
+        </tr>
+        {{range $index, $player := .Players}}
+        <tr>
+            <td>
+                <span name="playername_{{$index}}">
+                    {{$player.Name}}
+                </span>
+            <td>
+                <input
+                    type="number"
+                    name="playername_{{$index}}"
+                    value="{{$player.FIDE}}"
+                >
+            </td>
+            <td id="chance_{{$index}}">{{$player.Chance}}</td>
+        </tr>
+        {{end}}
+    </table>
+
+    <button type="submit">Update Grid</button>
+</form>
