@@ -7,28 +7,11 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
+    "github.com/craftidev/riskfactortournament/internal"
 )
 
 
-type Player struct {
-    Name   string
-    FIDE   *int
-    Rating *int
-    Chance float64
-    Standing int
-    Games []Game
-}
-
-type Game struct {
-    Number int
-    Opponent Player
-    PlayerResult *float64
-}
-
-type GridData struct {
-    Players []Player
-    NumPrizes int
-}
 
 func serveFrontend(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "index.html")
@@ -36,19 +19,19 @@ func serveFrontend(w http.ResponseWriter, r *http.Request) {
 
 func generateGrid(
     w http.ResponseWriter,
-    players []Player,
+    players []internal.Player,
     numPrizes int,
 ) {
     numPlayers := len(players)
     for pIx := range players {
-        games := make([]Game, 0, numPlayers - 1)
+        games := make([]internal.Game, 0, numPlayers - 1)
         gameNumber := 1
         for gIx := 0; gIx < numPlayers; gIx++ {
             if pIx == gIx {
                 continue
             }
             games = append(games,
-                Game{
+                internal.Game{
                     Number: gameNumber,
                     Opponent: players[gIx],
                     PlayerResult: nil,
@@ -59,7 +42,7 @@ func generateGrid(
         players[pIx].Games = games
     }
 
-    gridData := GridData{
+    gridData := internal.GridData{
         Players: players,
         NumPrizes: numPrizes,
     }
@@ -85,9 +68,9 @@ func initGrid(w http.ResponseWriter, r *http.Request) {
         log.Print("Unable to parse players or prizes input")
     }
 
-    players := make([]Player, numPlayers)
+    players := make([]internal.Player, numPlayers)
     for i := 0; i < numPlayers; i++ {
-        players[i] = Player{
+        players[i] = internal.Player{
             Name: "Player " + strconv.Itoa(i + 1),
             FIDE: nil,
             Rating: nil,
@@ -107,19 +90,25 @@ func updateGrid(w http.ResponseWriter, r *http.Request) {
     }
 
     numPlayers := len(r.Form) -1
-    players := make([]Player, numPlayers)
+    players := make([]internal.Player, numPlayers)
 
     for i := 0; i < numPlayers; i++ {
         fideStr := r.FormValue(fmt.Sprintf("playerFIDE_%d", i))
+        profile, err := internal.FetchFIDEProfile(fideStr)
+        if err != nil {
+            http.Error(w, "Failed to fetch FIDE profile", http.StatusInternalServerError)
+            return
+        }
+
         fide, err := strconv.Atoi(fideStr)
         if err != nil {
             http.Error(w, "Invalid FIDE input", http.StatusBadRequest)
         }
-        players[i].Name = "Player " + fideStr
+        players[i].Name = profile.Name
         players[i].FIDE = &fide
-        log.Printf("you entered FIDE %d", *players[i].FIDE)
+        players[i].Rating = &profile.Rating
     }
-    
+
     numPrizesStr := r.FormValue("numPrizes")
     numPrizes, err := strconv.Atoi(numPrizesStr)
     if err != nil {
