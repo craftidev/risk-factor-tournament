@@ -8,7 +8,10 @@
 Use the elo prediction system, but adjust to real world experience where `(elo difference) x (.84)` makes a better predictor.
 
 ## Chances
-Simulate the round robin tournament to get players chances to get the prizes
+Simulate the tournament format to get players chances to get the prizes
+
+For round robin tournament, maybe simulations are overkill. But it's easier/more fun for me that way. I don't know maths.
+
 
 ## Risk factor
 TODO WIP
