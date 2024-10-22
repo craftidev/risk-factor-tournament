@@ -13,18 +13,66 @@ import (
 type Player struct {
     Name   string
     FIDE   *int
+    Rating *int
     Chance float64
+    Standing int
+    Games []Game
+}
+
+type Game struct {
+    Number int
+    Opponent Player
+    PlayerResult *float64
 }
 
 type GridData struct {
     Players []Player
+    NumPrizes int
 }
 
 func serveFrontend(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "index.html")
 }
 
-func generateGrid(w http.ResponseWriter, r *http.Request) {
+func generateGrid(
+    w http.ResponseWriter,
+    players []Player,
+    numPrizes int,
+) {
+    numPlayers := len(players)
+    for pIx := range players {
+        games := make([]Game, 0, numPlayers - 1)
+        gameNumber := 1
+        for gIx := 0; gIx < numPlayers; gIx++ {
+            if pIx == gIx {
+                continue
+            }
+            games = append(games,
+                Game{
+                    Number: gameNumber,
+                    Opponent: players[gIx],
+                    PlayerResult: nil,
+                },
+            )
+            gameNumber++
+        }
+        players[pIx].Games = games
+    }
+
+    gridData := GridData{
+        Players: players,
+        NumPrizes: numPrizes,
+    }
+
+    tmpl := template.Must(template.ParseFiles("templates/grid.html"))
+    err := tmpl.Execute(w, gridData)
+    if err != nil {
+        http.Error(w, "Error rendering template", http.StatusInternalServerError)
+        return
+    }
+}
+
+func initGrid(w http.ResponseWriter, r *http.Request) {
     err := r.ParseForm()
     if err != nil {
         http.Error(w, "Unable to parse form", http.StatusBadRequest)
@@ -32,78 +80,59 @@ func generateGrid(w http.ResponseWriter, r *http.Request) {
     }
 
     numPlayers, errPlayers := strconv.Atoi(r.FormValue("numplayers"))
-    if errPlayers != nil {
-        log.Print("Unable to parse players input")
+    numPrizes, errPrizes := strconv.Atoi(r.FormValue("numprizes"))
+    if errPlayers != nil || errPrizes != nil {
+        log.Print("Unable to parse players or prizes input")
     }
-    // numPrizes, errPrizes := strconv.Atoi(r.FormValue("numprizes"))
-    // if errPlayers != nil || errPrizes != nil {
-    //     log.Print("Unable to parse players or prizes input")
-    // }
-
-
-
 
     players := make([]Player, numPlayers)
     for i := 0; i < numPlayers; i++ {
         players[i] = Player{
             Name: "Player " + strconv.Itoa(i + 1),
+            FIDE: nil,
+            Rating: nil,
             Chance: 100 / float64(numPlayers),
+            Standing: i,
         }
     }
-    gridData := GridData{
-        Players: players,
-    }
 
-    tmpl := template.Must(template.ParseFiles("templates/grid.html"))
-    err = tmpl.Execute(w, gridData)
-    if err != nil {
-        http.Error(w, "Error rendering template", http.StatusInternalServerError)
+    generateGrid(w, players, numPrizes)
+}
+
+func updateGrid(w http.ResponseWriter, r *http.Request) {
+    err := r.ParseForm()
+    if err!= nil {
+        http.Error(w, "Unable to parse form", http.StatusBadRequest)
         return
     }
 
+    numPlayers := len(r.Form) -1
+    players := make([]Player, numPlayers)
 
+    for i := 0; i < numPlayers; i++ {
+        fideStr := r.FormValue(fmt.Sprintf("playerFIDE_%d", i))
+        fide, err := strconv.Atoi(fideStr)
+        if err != nil {
+            http.Error(w, "Invalid FIDE input", http.StatusBadRequest)
+        }
+        players[i].Name = "Player " + fideStr
+        players[i].FIDE = &fide
+        log.Printf("you entered FIDE %d", *players[i].FIDE)
+    }
+    
+    numPrizesStr := r.FormValue("numPrizes")
+    numPrizes, err := strconv.Atoi(numPrizesStr)
+    if err != nil {
+        http.Error(w, "Unable to read number of prizes at this stage", http.StatusBadRequest)
+    }
 
-    // w.Header().Set("Content-Type", "text/html; charset=UTF-8")
-
-    // fmt.Fprintf(w, "<form hx-post='/update' hx-target='#grid' hx-swap='innerHTML'>")
-    // fmt.Fprintf(w, "<table>")
-    // fmt.Fprintf(w, "<tr><th>Players</th><th>FIDE number</th><th>Chances</th>")
-
-    // for i := 1; i < numPlayers; i++ {
-    //     fmt.Fprintf(w, "<th>Game %d</th>", i)
-    // }
-    // fmt.Fprintf(w, "</tr>")
-
-    // for i := 1; i <= numPlayers; i++ {
-    //     fmt.Fprint(w, "<tr")
-    //     if i <= numPrizes {
-    //         fmt.Fprint(w, " class='prize'")
-    //     }
-    //     fmt.Fprintf(w, `
-    //         ><td id="playername_%v">Player %v</td>
-    //         <td><input type="number" id="payerid_%v"></td>
-    //         <td><span id="chances_%v">%.2f<span>%%</td>
-    //     `, i, i, i, i, 100 / float64(numPlayers) * float64(numPrizes))
-    //     for j := 1; j < numPlayers; j++ {
-    //         fmt.Fprintf(w, `
-    //             <td id="player_%v_game_%v" class='score'>
-    //                 <a href="#">✅</a>
-    //                 <a href="#">½</a>
-    //                 <a href="#">❌</a>
-    //             </td>
-    //         `, i, j)
-    //     }
-    //     fmt.Fprintf(w, "</tr>")
-    // }
-
-    // fmt.Fprintf(w, "</table>")
-    // fmt.Fprintf(w, "<button type='submit'>Update grid</button>")
-    // fmt.Fprintf(w, "</form>")
+    generateGrid(w, players, numPrizes)
 }
 
 func main() {
 	http.HandleFunc("/", serveFrontend)
-	http.HandleFunc("/grid", generateGrid)
+	http.HandleFunc("/grid", initGrid)
+	http.HandleFunc("/update-grid", updateGrid)
 
     // Serve static files
     fs := http.FileServer(http.Dir("./static"))
