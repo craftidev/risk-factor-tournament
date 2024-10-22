@@ -9,20 +9,37 @@
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 </head>
 <body>
-    <p>What are your <strong>chances to win</strong> a prize?</p>
-    <p><strong>How much risk</strong> do you have to take in your next game?</p>
+    <p>
+        What are your <strong>chances to win</strong> a prize?
+    </p>
+    <p>
+        <strong>How much risk </strong>
+        do you have to take in your next game?
+    </p>
 
     <form hx-post="/grid" hx-target="#grid" hx-swap="innerHTML">
         <div class="inputs">
-            <label for="">Number of players in the tournament</label>
-            <input id="numplayers" name="numplayers" type="number">
+            <label for="numplayers">
+                Number of players in the tournament
+            </label>
+            <input
+                id="numplayers"
+                name="numplayers"
+                type="number"
+            >
         </div>
         <div class="inputs">
             <label for="numprizes">Places with prizes</label>
-            <input id="numprizes" name="numprizes" type="number">
+            <input
+                id="numprizes"
+                name="numprizes"
+                type="number"
+            >
         </div>
 
-        <button type="submit">Generate the tournament grid.</button>
+        <button type="submit">
+            Generate the tournament grid.
+        </button>
     </form>
 
     <div id="grid"></div>
