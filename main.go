@@ -23,27 +23,23 @@ func generateGrid(
     numPrizes int,
 ) {
     numPlayers := len(players)
-    for pIx := range players {
-        games := make([]internal.Game, 0, numPlayers - 1)
-        gameNumber := 1
-        for gIx := 0; gIx < numPlayers; gIx++ {
-            if pIx == gIx {
-                continue
-            }
-            games = append(games,
-                internal.Game{
-                    Number: gameNumber,
-                    Opponent: players[gIx],
-                    PlayerResult: nil,
-                },
-            )
-            gameNumber++
+    gameID := 1
+    games := make([]internal.Game, 0, (numPlayers * numPlayers - 1) / numPlayers)
+    for i := range players {
+        for j := i + 1; j < numPlayers; j++ {
+            games = append(games, internal.Game{
+                ID: gameID,
+                PlayerOneID: players[i].ID,
+                PlayerTwoID: players[j].ID,
+                Winer: -1,
+            })
+            gameID++
         }
-        players[pIx].Games = games
     }
 
     gridData := internal.GridData{
         Players: players,
+        Games: games,
         NumPrizes: numPrizes,
     }
 
