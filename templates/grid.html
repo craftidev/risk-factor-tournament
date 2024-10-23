@@ -1,38 +1,50 @@
 <p>*Ratings are recalculated when there is recent enough performance</p>
+
 <form hx-post="update-grid" hx-target="#grid" hx-swap="innerHTML">
     <input type="hidden" name="numPrizes" value="{{.NumPrizes}}">
+
     <table>
         <tr>
             <th>Player</th>
             <th>Rating</th>
             <th>FIDE number</th>
             <th>Chances</th>
-            {{$initPlayer := index .Players 0}}
-            {{range $index, $game := $initPlayer.Games}}
-                <th>Game {{$game.Number}}</th>
+            {{range $index, $player := .Players}}
+                {{if eq $index 0}}{{else}}
+                    <th>Game {{$index}}</th>
+                {{end}}
             {{end}}
             <th>Score</th>
         </tr>
 
+        {{$other_players_list := .Players}}
         {{range $index, $player := .Players}}
             <tr class="{{if lt $index $.NumPrizes}}prize{{else}}normal{{end}}">
                 <td id="playername_{{$index}}">
                     {{$player.Name}}
                 </td>
+
                 <td id="rating_player_{{$index}}">{{$player.Rating}}</td>
+
                 <td>
                     <input
                         type="number"
                         name="playerFIDE_{{$index}}"
-                        {{/* FIXME return value to player.FIDE */}}
-                        value="{{$index}}"
+                        value="{{$player.FIDE}}"
                     >
                 </td>
+
                 <td id="chance_{{$index}}">{{printf "%.2f" $player.Chance}}%</td>
-                {{range $index_game, $game := $player.Games}}
-                    <td id="result_player_{{$index}}_game_{{$index_game}}"></td>
+
+                {{range $index_game, $other_player := $other_players_list}}
+                    {{if eq $index_game 0}}{{else}}
+                        <td id="result_player_{{$index}}_game_{{$index_game}}">
+                            {{$index_game}}
+                        </td>
+                    {{end}}
                 {{end}}
-                <td id="score_player_{{$index}}"></td>
+
+                <td id="score_player_{{$index}}">{{$player.Score}}</td>
             </tr>
         {{end}}
     </table>
